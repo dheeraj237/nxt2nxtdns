@@ -47,6 +47,7 @@ export interface Profile {
   account_id: string;
   profile_id: string;
   display_name: string | null;
+  auto_refresh_linked_ip: boolean;
   account_label: string;
   created_at: string;
 }
@@ -82,6 +83,12 @@ export interface CatalogCategory {
   id: string;
 }
 
+export interface LinkedIpResponse {
+  linkedIp: string | null;
+  linkedIpDNSServers: string[];
+  updatedAt: string;
+}
+
 export const api = {
   login: (password: string) => apiFetch<{ ok: true }>('/api/auth/login', { method: 'POST', body: JSON.stringify({ password }) }),
   logout: () => apiFetch<{ ok: true }>('/api/auth/logout', { method: 'POST' }),
@@ -100,6 +107,9 @@ export const api = {
 
   listProfiles: () => apiFetch<Profile[]>('/api/profiles'),
   deleteProfile: (id: string) => apiFetch<void>(`/api/profiles/${id}`, { method: 'DELETE' }),
+  updateProfile: (id: string, patch: { autoRefreshLinkedIp?: boolean }) =>
+    apiFetch<{ ok: true }>(`/api/profiles/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+  linkProfileNow: (id: string) => apiFetch<LinkedIpResponse>(`/api/profiles/${id}/link-ip`, { method: 'POST' }),
   getLiveProfile: (id: string) => apiFetch<LiveProfile>(`/api/profiles/${id}/live`),
   addLiveEntry: (id: string, kind: 'denylist' | 'allowlist', entryId: string) =>
     apiFetch(`/api/profiles/${id}/live/${kind}`, { method: 'POST', body: JSON.stringify({ id: entryId, active: true }) }),

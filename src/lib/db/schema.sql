@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
   profile_id TEXT NOT NULL,
   display_name TEXT,
+  auto_refresh_linked_ip BOOLEAN DEFAULT FALSE,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (account_id, profile_id)
 );

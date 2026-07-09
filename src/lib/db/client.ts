@@ -52,6 +52,17 @@ function migrateLegacyMasterAndKillSwitch() {
 
 migrateLegacyMasterAndKillSwitch();
 
+function migrateAddLinkedIpColumn() {
+  const columns = db.prepare("PRAGMA table_info(profiles)").all() as { name: string }[];
+  const hasAutoRefreshLinkedIp = columns.some((c) => c.name === 'auto_refresh_linked_ip');
+
+  if (!hasAutoRefreshLinkedIp) {
+    db.exec('ALTER TABLE profiles ADD COLUMN auto_refresh_linked_ip BOOLEAN DEFAULT FALSE');
+  }
+}
+
+migrateAddLinkedIpColumn();
+
 export function newId(): string {
   return crypto.randomUUID();
 }

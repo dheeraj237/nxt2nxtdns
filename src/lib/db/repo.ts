@@ -19,6 +19,7 @@ export interface ProfileRow {
   account_id: string;
   profile_id: string;
   display_name: string | null;
+  auto_refresh_linked_ip: boolean;
   created_at: string;
 }
 
@@ -56,12 +57,13 @@ export const accountsRepo = {
         account_id: account.id,
         profile_id: p.profileId,
         display_name: p.displayName,
+        auto_refresh_linked_ip: false,
         created_at: new Date().toISOString(),
       }));
       for (const row of profileRows) {
         db.prepare(
-          'INSERT INTO profiles (id, account_id, profile_id, display_name, created_at) VALUES (?, ?, ?, ?, ?)',
-        ).run(row.id, row.account_id, row.profile_id, row.display_name, row.created_at);
+          'INSERT INTO profiles (id, account_id, profile_id, display_name, auto_refresh_linked_ip, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+        ).run(row.id, row.account_id, row.profile_id, row.display_name, row.auto_refresh_linked_ip, row.created_at);
       }
 
       const defaultProfile = profileRows[defaultProfileIndex];
@@ -133,5 +135,18 @@ export const profilesRepo = {
       throw new ProfileDeletionError('an account must always have at least one profile');
     }
     db.prepare('DELETE FROM profiles WHERE id = ?').run(id);
+  },
+  getByAutoRefresh(): (ProfileRow & { account_label: string })[] {
+    return db
+      .prepare(
+        `SELECT p.*, a.label as account_label FROM profiles p
+         JOIN accounts a ON a.id = p.account_id
+         WHERE p.auto_refresh_linked_ip = TRUE
+         ORDER BY p.created_at`,
+      )
+      .all() as never;
+  },
+  updateAutoRefresh(id: string, enabled: boolean): void {
+    db.prepare('UPDATE profiles SET auto_refresh_linked_ip = ? WHERE id = ?').run(enabled, id);
   },
 };

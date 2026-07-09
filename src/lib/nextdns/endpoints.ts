@@ -1,5 +1,5 @@
 import { nextDnsFetch } from './client';
-import type { ListItem, ParentalControlSettings, PrivacySettings, Profile } from './types';
+import type { ListItem, ParentalControlSettings, PrivacySettings, Profile, ProfileSetup } from './types';
 
 export interface ProfileSummary {
   id: string;
@@ -104,4 +104,33 @@ export function patchParentalControl(
     method: 'PATCH',
     body: JSON.stringify(patch),
   });
+}
+
+export function getProfileSetup(apiKey: string, profileId: string): Promise<ProfileSetup> {
+  return nextDnsFetch(apiKey, `/profiles/${profileId}/setup`);
+}
+
+export async function linkProfileToCurrentIp(linkedIpUpdateToken: string, profileId: string): Promise<string> {
+  try {
+    const response = await fetch(`https://link-ip.nextdns.io/${profileId}/${linkedIpUpdateToken}`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`NextDNS link-ip returned ${response.status}: ${response.statusText}`);
+    }
+
+    const text = await response.text();
+    if (text !== 'OK') {
+      throw new Error(`Unexpected response from link-ip endpoint: ${text}`);
+    }
+
+    return 'OK';
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to link IP to profile ${profileId}: ${message}`);
+  }
 }

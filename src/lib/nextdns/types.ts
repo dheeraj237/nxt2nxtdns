@@ -26,3 +26,10 @@ export interface Profile {
   parentalControl: ParentalControlSettings;
   privacy: PrivacySettings;
 }
+
+export interface ProfileSetup {
+  linkedIp?: string;
+  linkedIpDNSServers?: string[];
+  linkedIpUpdateToken?: string;
+  ddnsHostname?: string;
+}

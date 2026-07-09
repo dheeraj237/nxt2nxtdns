@@ -7,6 +7,7 @@ import { useProfiles, useDeleteProfile } from '@/hooks/useProfiles';
 import { useProfileEditorAdapter } from '@/hooks/useProfileEditorAdapter';
 import { useComputeDiff, useApplySync } from '@/hooks/useSync';
 import { ProfileTabs } from '@/components/ProfileTabs';
+import { ProfileLinkedIpCard } from '@/components/ProfileLinkedIpCard';
 import { SaveToModal } from '@/components/SaveToModal';
 import { DiffPreviewModal } from '@/components/DiffPreviewModal';
 import type { SyncDiff, SyncResult } from '@/lib/apiClient';
@@ -20,6 +21,11 @@ export default function AccountDetailPage() {
 
   const account = accounts.find((a) => a.id === accountId);
   const accountProfiles = useMemo(() => profiles.filter((p) => p.account_id === accountId), [profiles, accountId]);
+  const autoRefreshCount = useMemo(
+    () => accountProfiles.filter((p) => p.auto_refresh_linked_ip).length,
+    [accountProfiles],
+  );
+  const [dismissedMultipleAutoRefreshWarning, setDismissedMultipleAutoRefreshWarning] = useState(false);
 
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const activeProfileId = selectedProfileId ?? account?.default_profile_id ?? accountProfiles[0]?.id ?? '';
@@ -68,6 +74,20 @@ export default function AccountDetailPage() {
         <span />
       </div>
 
+      {autoRefreshCount > 1 && !dismissedMultipleAutoRefreshWarning && (
+        <div className="mb-4 flex items-center justify-between rounded border border-yellow-300 bg-yellow-50 p-3">
+          <p className="text-sm text-yellow-700">
+            Multiple profiles have auto-refresh enabled. NextDNS enforces one IP per profile; last re-linked profile will hold the IP.
+          </p>
+          <button
+            onClick={() => setDismissedMultipleAutoRefreshWarning(true)}
+            className="text-sm text-yellow-600 hover:text-yellow-700"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       <div className="mb-4 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <label className="text-xs font-medium text-slate-600">Profile</label>
@@ -101,6 +121,10 @@ export default function AccountDetailPage() {
       </div>
 
       <ProfileTabs adapter={adapter} />
+
+      <div className="mt-6">
+        <ProfileLinkedIpCard profileId={activeProfileId} profileLabel={adapter.profile?.name || 'Profile'} />
+      </div>
 
       <div className="mt-4 flex justify-between">
         <button
