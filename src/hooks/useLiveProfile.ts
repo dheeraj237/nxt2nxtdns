@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api, type LiveProfile } from '@/lib/apiClient';
+import { api } from '@/lib/apiClient';
 
 export function useLiveProfile(profileRowId: string) {
   return useQuery({
@@ -9,7 +9,8 @@ export function useLiveProfile(profileRowId: string) {
   });
 }
 
-export function useLiveProfileMutations(profileRowId: string) {
+/** Denylist/allowlist add, remove, and active-toggle are immediate - they hit NextDNS directly, independent of Save. */
+export function useLiveEntryMutations(profileRowId: string) {
   const qc = useQueryClient();
   const invalidate = () => qc.invalidateQueries({ queryKey: ['live-profile', profileRowId] });
 
@@ -21,18 +22,11 @@ export function useLiveProfileMutations(profileRowId: string) {
     mutationFn: ({ kind, entryId }: { kind: 'denylist' | 'allowlist'; entryId: string }) => api.removeLiveEntry(profileRowId, kind, entryId),
     onSuccess: invalidate,
   });
-  const patchPrivacy = useMutation({
-    mutationFn: (patch: Partial<LiveProfile['privacy']>) => api.patchLivePrivacy(profileRowId, patch),
-    onSuccess: invalidate,
-  });
-  const putBlocklists = useMutation({
-    mutationFn: (blocklists: { id: string }[]) => api.putLiveBlocklists(profileRowId, blocklists),
-    onSuccess: invalidate,
-  });
-  const patchParentalControl = useMutation({
-    mutationFn: (patch: Partial<LiveProfile['parentalControl']>) => api.patchLiveParentalControl(profileRowId, patch),
+  const toggleEntryActive = useMutation({
+    mutationFn: ({ kind, entryId, active }: { kind: 'denylist' | 'allowlist'; entryId: string; active: boolean }) =>
+      api.patchLiveEntry(profileRowId, kind, entryId, active),
     onSuccess: invalidate,
   });
 
-  return { addEntry, removeEntry, patchPrivacy, putBlocklists, patchParentalControl };
+  return { addEntry, removeEntry, toggleEntryActive };
 }

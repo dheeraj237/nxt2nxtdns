@@ -5,34 +5,45 @@ import { BLOCKLIST_CATALOG } from '@/lib/nextdns/blocklistCatalog';
 import { useParentalControlCategoriesCatalog, useParentalControlServicesCatalog } from '@/hooks/useCatalog';
 import type { ProfileEditorAdapter } from '@/hooks/useProfileEditorAdapter';
 
+const TABS = ['Security', 'Privacy', 'Parental Control', 'Denylist', 'Allowlist', 'Logs', 'Analytics', 'Settings'] as const;
+type Tab = (typeof TABS)[number];
+
+function Placeholder({ label }: { label: string }) {
+  return <p className="py-8 text-center text-sm text-slate-400">{label} isn&apos;t available yet.</p>;
+}
+
 function ListSection({
-  title,
   kind,
   entries,
   onAdd,
   onRemove,
+  onToggleActive,
 }: {
-  title: string;
   kind: 'denylist' | 'allowlist';
   entries: { id: string; active: boolean }[];
   onAdd: (kind: 'denylist' | 'allowlist', id: string) => void;
   onRemove: (kind: 'denylist' | 'allowlist', id: string) => void;
+  onToggleActive: (kind: 'denylist' | 'allowlist', id: string, active: boolean) => void;
 }) {
   const [value, setValue] = useState('');
   return (
     <div>
-      <h4 className="mb-1 text-sm font-semibold text-slate-700">
-        {title} ({entries.length})
-      </h4>
-      <ul className="mb-2 max-h-40 overflow-y-auto text-sm text-slate-600">
+      <ul className="mb-2 max-h-96 overflow-y-auto text-sm text-slate-600">
         {entries.map((e) => (
-          <li key={e.id} className="flex items-center justify-between gap-2 py-0.5">
-            <span>{e.id}</span>
-            <button onClick={() => onRemove(kind, e.id)} className="text-xs text-red-600 hover:underline">
-              Remove
-            </button>
+          <li key={e.id} className="flex items-center justify-between gap-2 border-b border-slate-100 py-1.5">
+            <span className={e.active ? '' : 'text-slate-400 line-through'}>{e.id}</span>
+            <div className="flex items-center gap-3">
+              <label className="inline-flex items-center gap-1 text-xs text-slate-500">
+                <input type="checkbox" checked={e.active} onChange={(ev) => onToggleActive(kind, e.id, ev.target.checked)} />
+                Active
+              </label>
+              <button onClick={() => onRemove(kind, e.id)} className="text-xs text-red-600 hover:underline">
+                Remove
+              </button>
+            </div>
           </li>
         ))}
+        {entries.length === 0 && <li className="py-2 text-slate-400">No entries yet.</li>}
       </ul>
       <div className="flex gap-1">
         <input
@@ -56,7 +67,7 @@ function ListSection({
   );
 }
 
-function PrivacySection({ adapter }: { adapter: ProfileEditorAdapter }) {
+function PrivacyTab({ adapter }: { adapter: ProfileEditorAdapter }) {
   const profile = adapter.profile;
   if (!profile) return null;
   const activeIds = new Set(profile.privacy.blocklists.map((b) => b.id));
@@ -68,8 +79,7 @@ function PrivacySection({ adapter }: { adapter: ProfileEditorAdapter }) {
 
   return (
     <div>
-      <h4 className="mb-1 text-sm font-semibold text-slate-700">Privacy</h4>
-      <div className="mb-2 flex flex-col gap-1">
+      <div className="mb-3 flex flex-col gap-1">
         <label className="flex items-center gap-2 text-sm text-slate-700">
           <input
             type="checkbox"
@@ -87,8 +97,8 @@ function PrivacySection({ adapter }: { adapter: ProfileEditorAdapter }) {
           Allow affiliate & tracking links
         </label>
       </div>
-      <p className="mb-1 text-xs text-slate-500">Blocklists</p>
-      <div className="grid max-h-40 grid-cols-2 gap-1 overflow-y-auto">
+      <p className="mb-1 text-xs font-medium text-slate-500">Blocklists</p>
+      <div className="grid max-h-72 grid-cols-2 gap-1 overflow-y-auto">
         {BLOCKLIST_CATALOG.map((b) => (
           <label key={b.id} className="flex items-center gap-2 text-sm text-slate-700">
             <input type="checkbox" checked={activeIds.has(b.id)} onChange={() => toggleBlocklist(b.id)} />
@@ -100,7 +110,7 @@ function PrivacySection({ adapter }: { adapter: ProfileEditorAdapter }) {
   );
 }
 
-function ParentalControlSection({ adapter }: { adapter: ProfileEditorAdapter }) {
+function ParentalControlTab({ adapter }: { adapter: ProfileEditorAdapter }) {
   const profile = adapter.profile;
   const { data: services = [] } = useParentalControlServicesCatalog();
   const { data: categories = [] } = useParentalControlCategoriesCatalog();
@@ -121,8 +131,7 @@ function ParentalControlSection({ adapter }: { adapter: ProfileEditorAdapter }) 
 
   return (
     <div>
-      <h4 className="mb-1 text-sm font-semibold text-slate-700">Parental control</h4>
-      <div className="mb-2 flex flex-col gap-1">
+      <div className="mb-3 flex flex-col gap-1">
         <label className="flex items-center gap-2 text-sm text-slate-700">
           <input
             type="checkbox"
@@ -140,8 +149,8 @@ function ParentalControlSection({ adapter }: { adapter: ProfileEditorAdapter }) 
           YouTube restricted mode
         </label>
       </div>
-      <p className="mb-1 text-xs text-slate-500">Categories</p>
-      <div className="mb-2 grid max-h-32 grid-cols-2 gap-1 overflow-y-auto">
+      <p className="mb-1 text-xs font-medium text-slate-500">Categories</p>
+      <div className="mb-3 grid max-h-48 grid-cols-2 gap-1 overflow-y-auto">
         {categories.map((c) => (
           <label key={c.id} className="flex items-center gap-2 text-sm text-slate-700">
             <input type="checkbox" checked={activeCategoryIds.has(c.id)} onChange={() => toggleCategory(c.id)} />
@@ -149,8 +158,8 @@ function ParentalControlSection({ adapter }: { adapter: ProfileEditorAdapter }) 
           </label>
         ))}
       </div>
-      <p className="mb-1 text-xs text-slate-500">Services</p>
-      <div className="grid max-h-40 grid-cols-2 gap-1 overflow-y-auto">
+      <p className="mb-1 text-xs font-medium text-slate-500">Services</p>
+      <div className="grid max-h-72 grid-cols-2 gap-1 overflow-y-auto">
         {services.map((s) => (
           <label key={s.id} className="flex items-center gap-2 text-sm text-slate-700">
             <input type="checkbox" checked={activeServiceIds.has(s.id)} onChange={() => toggleService(s.id)} />
@@ -162,23 +171,40 @@ function ParentalControlSection({ adapter }: { adapter: ProfileEditorAdapter }) 
   );
 }
 
-export function ProfileEditor({ title, adapter }: { title: string; adapter: ProfileEditorAdapter }) {
+export function ProfileTabs({ adapter }: { adapter: ProfileEditorAdapter }) {
+  const [tab, setTab] = useState<Tab>('Privacy');
   const { profile, isLoading, error } = adapter;
 
-  if (isLoading) return <p className="text-sm text-slate-500">Loading {title.toLowerCase()}...</p>;
-  if (error) return <p className="text-sm text-red-600">Failed to load {title.toLowerCase()}: {(error as Error).message}</p>;
+  if (isLoading) return <p className="text-sm text-slate-500">Loading profile...</p>;
+  if (error) return <p className="text-sm text-red-600">Failed to load profile: {(error as Error).message}</p>;
   if (!profile) return null;
 
   return (
-    <div className="rounded-lg border border-slate-200 p-3">
-      <h3 className="mb-2 font-medium text-slate-800">
-        {title}: {profile.name || 'Untitled'}
-      </h3>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <ListSection title="Denylist" kind="denylist" entries={profile.denylist} onAdd={adapter.addEntry} onRemove={adapter.removeEntry} />
-        <ListSection title="Allowlist" kind="allowlist" entries={profile.allowlist} onAdd={adapter.addEntry} onRemove={adapter.removeEntry} />
-        <PrivacySection adapter={adapter} />
-        <ParentalControlSection adapter={adapter} />
+    <div className="rounded-lg border border-slate-200">
+      <div className="flex flex-wrap border-b border-slate-200">
+        {TABS.map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`px-3 py-2 text-sm ${tab === t ? 'border-b-2 border-slate-900 font-medium text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+      <div className="p-4">
+        {tab === 'Security' && <Placeholder label="Security" />}
+        {tab === 'Privacy' && <PrivacyTab adapter={adapter} />}
+        {tab === 'Parental Control' && <ParentalControlTab adapter={adapter} />}
+        {tab === 'Denylist' && (
+          <ListSection kind="denylist" entries={profile.denylist} onAdd={adapter.addEntry} onRemove={adapter.removeEntry} onToggleActive={adapter.toggleEntryActive} />
+        )}
+        {tab === 'Allowlist' && (
+          <ListSection kind="allowlist" entries={profile.allowlist} onAdd={adapter.addEntry} onRemove={adapter.removeEntry} onToggleActive={adapter.toggleEntryActive} />
+        )}
+        {tab === 'Logs' && <Placeholder label="Logs" />}
+        {tab === 'Analytics' && <Placeholder label="Analytics" />}
+        {tab === 'Settings' && <Placeholder label="Settings" />}
       </div>
     </div>
   );

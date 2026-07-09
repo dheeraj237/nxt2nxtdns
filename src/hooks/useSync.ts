@@ -1,16 +1,16 @@
 import { useMutation } from '@tanstack/react-query';
-import { api, type SyncSource } from '@/lib/apiClient';
+import { api, type LiveProfile } from '@/lib/apiClient';
 
 export function useComputeDiff() {
   return useMutation({
-    mutationFn: ({ source, targetProfileIds }: { source: SyncSource; targetProfileIds?: string[] }) =>
-      api.computeDiff(source, targetProfileIds),
+    mutationFn: ({ sourceProfile, targetAccountIds }: { sourceProfile: LiveProfile; targetAccountIds: string[] }) =>
+      api.computeDiff(sourceProfile, targetAccountIds),
   });
 }
 
 export function useApplySync() {
   return useMutation({
-    mutationFn: ({ source, targetProfileIds }: { source: SyncSource; targetProfileIds?: string[] }) =>
-      api.applySync(source, targetProfileIds),
+    mutationFn: ({ sourceProfile, targetAccountIds }: { sourceProfile: LiveProfile; targetAccountIds: string[] }) =>
+      api.applySync(sourceProfile, targetAccountIds),
   });
 }

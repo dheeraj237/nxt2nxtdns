@@ -13,6 +13,45 @@ db.pragma('foreign_keys = ON');
 const schema = fs.readFileSync(path.join(process.cwd(), 'src/lib/db/schema.sql'), 'utf8');
 db.exec(schema);
 
+/**
+ * `accounts` used to have a nullable single `is_master` flag with no notion of a
+ * per-account default profile, and a standalone `kill_switch_profile` table. Both
+ * concepts were removed in favor of every account having its own `default_profile_id`.
+ * This migrates any pre-existing local database in place instead of assuming a fresh one.
+ */
+function migrateLegacyMasterAndKillSwitch() {
+  const columns = db.prepare("PRAGMA table_info(accounts)").all() as { name: string }[];
+  const hasDefaultProfileId = columns.some((c) => c.name === 'default_profile_id');
+  const hasIsMaster = columns.some((c) => c.name === 'is_master');
+
+  if (!hasDefaultProfileId) {
+    db.exec('ALTER TABLE accounts ADD COLUMN default_profile_id TEXT REFERENCES profiles(id)');
+    const accountsWithoutDefault = db.prepare('SELECT id FROM accounts WHERE default_profile_id IS NULL').all() as { id: string }[];
+    for (const { id } of accountsWithoutDefault) {
+      const firstProfile = db
+        .prepare('SELECT id FROM profiles WHERE account_id = ? ORDER BY created_at LIMIT 1')
+        .get(id) as { id: string } | undefined;
+      if (firstProfile) {
+        db.prepare('UPDATE accounts SET default_profile_id = ? WHERE id = ?').run(firstProfile.id, id);
+      }
+    }
+  }
+
+  if (hasIsMaster) {
+    db.exec('DROP INDEX IF EXISTS one_master_account');
+    db.exec('ALTER TABLE accounts DROP COLUMN is_master');
+  }
+
+  const hasKillSwitchTable = (
+    db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'kill_switch_profile'").get() as
+      | { name: string }
+      | undefined
+  ) !== undefined;
+  if (hasKillSwitchTable) db.exec('DROP TABLE kill_switch_profile');
+}
+
+migrateLegacyMasterAndKillSwitch();
+
 export function newId(): string {
   return crypto.randomUUID();
 }

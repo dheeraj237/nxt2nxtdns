@@ -1,9 +1,8 @@
 import { db, newId } from './client';
 import { decrypt, encrypt } from '../crypto';
-import type { ParentalControlSettings, PrivacySettings, Profile, ListItem } from '../nextdns/types';
 
-export class MasterValidationError extends Error {
-  status = 422;
+export class ProfileDeletionError extends Error {
+  status = 409;
 }
 
 export interface AccountRow {
@@ -11,7 +10,7 @@ export interface AccountRow {
   label: string;
   encrypted_api_key: string;
   iv: string;
-  is_master: 0 | 1;
+  default_profile_id: string | null;
   created_at: string;
 }
 
@@ -25,26 +24,63 @@ export interface ProfileRow {
 
 export const accountsRepo = {
   list(): Omit<AccountRow, 'encrypted_api_key' | 'iv'>[] {
-    return db.prepare('SELECT id, label, is_master, created_at FROM accounts ORDER BY created_at').all() as never;
+    return db.prepare('SELECT id, label, default_profile_id, created_at FROM accounts ORDER BY created_at').all() as never;
   },
-  create(label: string, apiKey: string): AccountRow {
+  get(id: string): Omit<AccountRow, 'encrypted_api_key' | 'iv'> | undefined {
+    return db.prepare('SELECT id, label, default_profile_id, created_at FROM accounts WHERE id = ?').get(id) as never;
+  },
+  /** Creates an account together with its NextDNS profiles and default profile in one transaction. */
+  createWithProfiles(
+    label: string,
+    apiKey: string,
+    profiles: { profileId: string; displayName: string | null }[],
+    defaultProfileIndex: number,
+  ): { account: AccountRow; profiles: ProfileRow[] } {
     const { ciphertext, iv } = encrypt(apiKey);
-    const row: AccountRow = {
+    const account: AccountRow = {
       id: newId(),
       label,
       encrypted_api_key: ciphertext,
       iv,
-      is_master: 0,
+      default_profile_id: null,
       created_at: new Date().toISOString(),
     };
-    db.prepare('INSERT INTO accounts (id, label, encrypted_api_key, iv, is_master, created_at) VALUES (?, ?, ?, ?, 0, ?)').run(
-      row.id,
-      row.label,
-      row.encrypted_api_key,
-      row.iv,
-      row.created_at,
-    );
-    return row;
+
+    const tx = db.transaction(() => {
+      db.prepare(
+        'INSERT INTO accounts (id, label, encrypted_api_key, iv, default_profile_id, created_at) VALUES (?, ?, ?, ?, NULL, ?)',
+      ).run(account.id, account.label, account.encrypted_api_key, account.iv, account.created_at);
+
+      const profileRows: ProfileRow[] = profiles.map((p) => ({
+        id: newId(),
+        account_id: account.id,
+        profile_id: p.profileId,
+        display_name: p.displayName,
+        created_at: new Date().toISOString(),
+      }));
+      for (const row of profileRows) {
+        db.prepare(
+          'INSERT INTO profiles (id, account_id, profile_id, display_name, created_at) VALUES (?, ?, ?, ?, ?)',
+        ).run(row.id, row.account_id, row.profile_id, row.display_name, row.created_at);
+      }
+
+      const defaultProfile = profileRows[defaultProfileIndex];
+      db.prepare('UPDATE accounts SET default_profile_id = ? WHERE id = ?').run(defaultProfile.id, account.id);
+      account.default_profile_id = defaultProfile.id;
+
+      return profileRows;
+    });
+
+    const profileRows = tx();
+    return { account, profiles: profileRows };
+  },
+  updateLabel(id: string, label: string): void {
+    db.prepare('UPDATE accounts SET label = ? WHERE id = ?').run(label, id);
+  },
+  setDefaultProfile(accountId: string, profileId: string): void {
+    const row = profilesRepo.get(profileId);
+    if (!row || row.account_id !== accountId) throw new Error('profile does not belong to this account');
+    db.prepare('UPDATE accounts SET default_profile_id = ? WHERE id = ?').run(profileId, accountId);
   },
   updateApiKey(id: string, apiKey: string): void {
     const { ciphertext, iv } = encrypt(apiKey);
@@ -60,28 +96,12 @@ export const accountsRepo = {
     if (!row) throw new Error('account not found');
     return decrypt(row.encrypted_api_key, row.iv);
   },
+  /** Any onboarded account's key - used for read-only NextDNS catalog lookups that aren't account-specific. */
   getAnyKey(): string | undefined {
-    const row = db.prepare('SELECT encrypted_api_key, iv FROM accounts ORDER BY is_master DESC, created_at LIMIT 1').get() as
+    const row = db.prepare('SELECT encrypted_api_key, iv FROM accounts ORDER BY created_at LIMIT 1').get() as
       | Pick<AccountRow, 'encrypted_api_key' | 'iv'>
       | undefined;
     return row ? decrypt(row.encrypted_api_key, row.iv) : undefined;
-  },
-  setMaster(id: string): void {
-    const { c } = db.prepare('SELECT COUNT(*) as c FROM profiles WHERE account_id = ?').get(id) as { c: number };
-    if (c !== 1) throw new MasterValidationError('account must have exactly one profile to be set as master');
-    const tx = db.transaction(() => {
-      db.prepare('UPDATE accounts SET is_master = 0 WHERE is_master = 1').run();
-      db.prepare('UPDATE accounts SET is_master = 1 WHERE id = ?').run(id);
-    });
-    tx();
-  },
-  getMaster(): AccountRow | undefined {
-    return db.prepare('SELECT * FROM accounts WHERE is_master = 1').get() as AccountRow | undefined;
-  },
-  getMasterProfile(): ProfileRow | undefined {
-    return db
-      .prepare('SELECT p.* FROM profiles p JOIN accounts a ON a.id = p.account_id WHERE a.is_master = 1')
-      .get() as ProfileRow | undefined;
   },
 };
 
@@ -95,71 +115,23 @@ export const profilesRepo = {
       )
       .all() as never;
   },
-  listIds(): string[] {
-    return (db.prepare('SELECT id FROM profiles').all() as { id: string }[]).map((r) => r.id);
-  },
   countForAccount(accountId: string): number {
     return (db.prepare('SELECT COUNT(*) as c FROM profiles WHERE account_id = ?').get(accountId) as { c: number }).c;
   },
   get(id: string): ProfileRow | undefined {
     return db.prepare('SELECT * FROM profiles WHERE id = ?').get(id) as ProfileRow | undefined;
   },
-  create(accountId: string, profileId: string, displayName: string | null): ProfileRow {
-    const row: ProfileRow = {
-      id: newId(),
-      account_id: accountId,
-      profile_id: profileId,
-      display_name: displayName,
-      created_at: new Date().toISOString(),
-    };
-    db.prepare(
-      'INSERT INTO profiles (id, account_id, profile_id, display_name, created_at) VALUES (?, ?, ?, ?, ?)',
-    ).run(row.id, row.account_id, row.profile_id, row.display_name, row.created_at);
-    return row;
-  },
+  /** Refuses to delete an account's last profile or its current default profile. */
   delete(id: string): void {
+    const row = profilesRepo.get(id);
+    if (!row) return;
+    const account = accountsRepo.get(row.account_id);
+    if (account?.default_profile_id === id) {
+      throw new ProfileDeletionError('cannot delete the account\'s default profile - set a different default first');
+    }
+    if (profilesRepo.countForAccount(row.account_id) <= 1) {
+      throw new ProfileDeletionError('an account must always have at least one profile');
+    }
     db.prepare('DELETE FROM profiles WHERE id = ?').run(id);
-  },
-};
-
-interface KillSwitchProfile {
-  denylist: ListItem[];
-  allowlist: ListItem[];
-  privacy: PrivacySettings;
-  parentalControl: ParentalControlSettings;
-}
-
-interface KillSwitchRow {
-  denylist: string;
-  allowlist: string;
-  privacy: string;
-  parental_control: string;
-}
-
-export const killSwitchRepo = {
-  get(): KillSwitchProfile {
-    const row = db.prepare('SELECT denylist, allowlist, privacy, parental_control FROM kill_switch_profile WHERE id = 1').get() as KillSwitchRow;
-    return {
-      denylist: JSON.parse(row.denylist),
-      allowlist: JSON.parse(row.allowlist),
-      privacy: JSON.parse(row.privacy),
-      parentalControl: JSON.parse(row.parental_control),
-    };
-  },
-  update(patch: Partial<KillSwitchProfile>): KillSwitchProfile {
-    const next = { ...killSwitchRepo.get(), ...patch };
-    db.prepare(
-      'UPDATE kill_switch_profile SET denylist = ?, allowlist = ?, privacy = ?, parental_control = ?, updated_at = ? WHERE id = 1',
-    ).run(
-      JSON.stringify(next.denylist),
-      JSON.stringify(next.allowlist),
-      JSON.stringify(next.privacy),
-      JSON.stringify(next.parentalControl),
-      new Date().toISOString(),
-    );
-    return next;
-  },
-  asProfile(): Profile {
-    return { id: '__kill-switch__', name: 'Kill switch', ...killSwitchRepo.get() };
   },
 };

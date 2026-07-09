@@ -1,8 +1,9 @@
 # NextDNS Multi-Account Manager
 
-Manage multiple NextDNS accounts/profiles from one UI, with a "master
-profile" you can mirror onto any selection of other profiles across
-any account.
+Manage multiple NextDNS accounts/profiles from one UI. Open any
+account's profile, edit it with a NextDNS-dashboard-style tabbed
+editor, then optionally "Save to..." any selection of other accounts
+to mirror those settings onto their default profile.
 
 ## Why a backend
 
@@ -25,7 +26,7 @@ Single Next.js 15 app (App Router) - not a separate backend/frontend.
 - `src/hooks` - React Query hooks for accounts/profiles/sync
 - `src/lib/db` - SQLite (`better-sqlite3`) schema + repository
 - `src/lib/nextdns` - NextDNS API client
-- `src/lib/sync` - diff engine + sync executor (master -> targets)
+- `src/lib/sync` - diff engine + sync executor (the profile open in the editor -> selected target accounts)
 - `src/lib/auth`, `env` - session/JWT auth, env loading
 
 ## Getting Started
@@ -40,11 +41,12 @@ cp .env.example .env
 pnpm dev
 ```
 
-Open `http://localhost:3000`, sign in with `MASTER_PASSWORD`, add a
-NextDNS account (label + API key from https://my.nextdns.io/account),
-then add its profiles by pasting each profile's 6-character ID (from
-its dashboard URL, e.g. `my.nextdns.io/abc123/setup`) - the NextDNS
-API has no endpoint to list profiles automatically.
+Open `http://localhost:3000`, sign in with `MASTER_PASSWORD`, and add
+a NextDNS account (label + API key from
+https://my.nextdns.io/account). The app fetches that key's profiles
+from NextDNS automatically - pick one as the account's default. An
+account can never be reduced to zero profiles, and its default
+profile can't be deleted until you set a different one.
 
 ### Testing
 
@@ -68,10 +70,16 @@ docker compose up --build -d
 
 ## Notes / accepted tradeoffs
 
-- One global master profile; "apply" makes each selected target's
-  denylist, allowlist, privacy blocklists/disguisedTrackers, and
-  parentalControl services/categories an exact mirror of the master
-  (entries only on the target are removed).
+- "Save to..." makes each selected target account's default
+  profile's denylist, allowlist, privacy blocklists/disguisedTrackers,
+  and parentalControl services/categories an exact mirror of the
+  profile you were editing (entries only on the target are removed).
+- Denylist/allowlist entries have an active/inactive switch (matching
+  NextDNS's own semantics) that applies immediately, independent of
+  the page's Save button. Privacy and Parental Control edits are
+  staged locally and only sent to NextDNS when you click Save.
+- Security, Logs, Analytics, and Settings tabs are placeholders - no
+  backend integration yet.
 - NextDNS's `PATCH` merge-vs-replace semantics for
   `parentalControl`/`privacy` are undocumented; the diff engine
   currently sends the full desired array on any change. Verify
