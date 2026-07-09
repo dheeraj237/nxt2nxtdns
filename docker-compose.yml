@@ -1,0 +1,16 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      MASTER_PASSWORD: ${MASTER_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      SERVER_SECRET: ${SERVER_SECRET}
+      DB_PATH: /app/data/app.db
+    volumes:
+      - nxtdns-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  nxtdns-data:
