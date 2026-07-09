@@ -1,6 +1,34 @@
 import { nextDnsFetch } from './client';
 import type { ListItem, ParentalControlSettings, PrivacySettings, Profile } from './types';
 
+export interface ProfileSummary {
+  id: string;
+  fingerprint: string;
+  role: string;
+  name: string;
+}
+
+export interface ParentalControlServiceCatalogEntry {
+  id: string;
+  website: string;
+}
+
+export interface ParentalControlCategoryCatalogEntry {
+  id: string;
+}
+
+export function listProfiles(apiKey: string): Promise<ProfileSummary[]> {
+  return nextDnsFetch(apiKey, '/profiles');
+}
+
+export function listParentalControlServicesCatalog(apiKey: string): Promise<ParentalControlServiceCatalogEntry[]> {
+  return nextDnsFetch(apiKey, '/parentalControl/services');
+}
+
+export function listParentalControlCategoriesCatalog(apiKey: string): Promise<ParentalControlCategoryCatalogEntry[]> {
+  return nextDnsFetch(apiKey, '/parentalControl/categories');
+}
+
 export function getProfile(apiKey: string, profileId: string): Promise<Profile> {
   return nextDnsFetch(apiKey, `/profiles/${profileId}`);
 }

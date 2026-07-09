@@ -6,7 +6,6 @@ services:
     environment:
       MASTER_PASSWORD: ${MASTER_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
-      SERVER_SECRET: ${SERVER_SECRET}
       DB_PATH: /app/data/app.db
     volumes:
       - nxtdns-data:/app/data

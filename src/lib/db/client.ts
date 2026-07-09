@@ -6,6 +6,7 @@ import { env } from '../env';
 
 fs.mkdirSync(path.dirname(env.dbPath), { recursive: true });
 export const db = new Database(env.dbPath);
+db.pragma('busy_timeout = 5000');
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 

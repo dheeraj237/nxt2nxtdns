@@ -9,7 +9,10 @@ export function useCreateAccount() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ label, apiKey }: { label: string; apiKey: string }) => api.createAccount(label, apiKey),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['accounts'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['accounts'] });
+      qc.invalidateQueries({ queryKey: ['profiles'] });
+    },
   });
 }
 
@@ -21,5 +24,13 @@ export function useDeleteAccount() {
       qc.invalidateQueries({ queryKey: ['accounts'] });
       qc.invalidateQueries({ queryKey: ['profiles'] });
     },
+  });
+}
+
+export function useSetMasterAccount() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.setMasterAccount(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['accounts'] }),
   });
 }

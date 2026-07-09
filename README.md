@@ -9,58 +9,62 @@ any account.
 NextDNS's API only accepts auth via the `X-Api-Key` header, and its
 CORS preflight does not whitelist that header for cross-origin
 browser requests. A pure client-only app cannot call
-`api.nextdns.io` directly. The `backend/` service holds your API
-keys (encrypted at rest) and relays NextDNS calls server-side.
+`api.nextdns.io` directly. This app's server side holds your API keys
+and relays NextDNS calls server-side.
 
-## Layout
+API keys are stored in plaintext in the SQLite database - this is a
+self-hosted, single-user tool, and there's no `SERVER_SECRET` /
+at-rest encryption. Secure the host and the `data/` volume yourself.
 
-- `backend/` - Node + Express + SQLite. Owns auth, persistence,
-  the NextDNS relay, and the master-profile diff/mirror sync engine.
-  Deploy via Docker (see `backend/docker-compose.yml`) on any host
-  you control (e.g. CasaOS).
-- `frontend/` - React + Vite + TS + Tailwind SPA. Static build,
-  deployed to GitHub Pages via `.github/workflows/deploy.yml`. Talks
-  only to your backend's own API - never to NextDNS directly.
+## Architecture
 
-## Setup
+Single Next.js 15 app (App Router) - not a separate backend/frontend.
 
-### Backend
+- `src/app` - pages and API routes (login, main UI)
+- `src/components` - React UI
+- `src/hooks` - React Query hooks for accounts/profiles/sync
+- `src/lib/db` - SQLite (`better-sqlite3`) schema + repository
+- `src/lib/nextdns` - NextDNS API client
+- `src/lib/sync` - diff engine + sync executor (master -> targets)
+- `src/lib/auth`, `env` - session/JWT auth, env loading
+
+## Getting Started
+
+### Local dev
 
 ```bash
-cd backend
+pnpm install
 cp .env.example .env
-npm install
-npm run hash-password -- "your-master-password"   # paste into MASTER_PASSWORD_HASH
-openssl rand -hex 32                                # paste into JWT_SECRET
-openssl rand -hex 32                                # paste into SERVER_SECRET
-# set CORS_ORIGIN to your deployed frontend origin, e.g. https://youruser.github.io
-npm run dev      # or: docker compose up --build
+# set MASTER_PASSWORD to your login password
+# set JWT_SECRET: openssl rand -hex 32
+pnpm dev
 ```
 
-### Frontend
-
-```bash
-cd frontend
-cp .env.example .env   # set VITE_API_BASE_URL to your backend's public URL
-npm install
-npm run dev
-```
-
-Open the printed local URL, sign in with your master password, add a
+Open `http://localhost:3000`, sign in with `MASTER_PASSWORD`, add a
 NextDNS account (label + API key from https://my.nextdns.io/account),
 then add its profiles by pasting each profile's 6-character ID (from
 its dashboard URL, e.g. `my.nextdns.io/abc123/setup`) - the NextDNS
 API has no endpoint to list profiles automatically.
 
-### Deploying
+### Testing
 
-- **Backend**: build/run the Docker image on your own host, exposed
-  publicly (e.g. via a reverse proxy or tunnel) over HTTPS so the
-  GitHub Pages frontend can reach it cross-origin.
-- **Frontend**: push to `main`; the GitHub Actions workflow builds
-  and publishes `frontend/` to GitHub Pages. Set the repo variable
-  `VITE_API_BASE_URL` (Settings -> Secrets and variables -> Actions
-  -> Variables) to your backend's public URL first.
+```bash
+pnpm test   # vitest run
+```
+
+### Deploying (self-hosted, Docker)
+
+```bash
+export MASTER_PASSWORD=...
+export JWT_SECRET=$(openssl rand -hex 32)
+docker compose up --build -d
+```
+
+- Exposes port `3000` on the host; put it behind your own reverse
+  proxy or tunnel for HTTPS (e.g. Caddy, Nginx, Tailscale) - the
+  container itself serves plain HTTP.
+- The SQLite database lives in the `nxtdns-data` Docker volume, so
+  data survives container rebuilds.
 
 ## Notes / accepted tradeoffs
 

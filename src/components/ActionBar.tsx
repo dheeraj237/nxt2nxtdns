@@ -3,13 +3,12 @@
 interface Props {
   selectedCount: number;
   hasMaster: boolean;
-  hasBasic: boolean;
   disabled: boolean;
   onApplyMaster: (scope: 'selected' | 'all') => void;
   onKillSwitch: (scope: 'selected' | 'all') => void;
 }
 
-export function ActionBar({ selectedCount, hasMaster, hasBasic, disabled, onApplyMaster, onKillSwitch }: Props) {
+export function ActionBar({ selectedCount, hasMaster, disabled, onApplyMaster, onKillSwitch }: Props) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3">
@@ -40,26 +39,20 @@ export function ActionBar({ selectedCount, hasMaster, hasBasic, disabled, onAppl
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        {hasBasic ? (
-          <>
-            <button
-              onClick={() => onKillSwitch('selected')}
-              disabled={disabled || selectedCount === 0}
-              className="rounded bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-500 disabled:opacity-50"
-            >
-              Kill switch: selected
-            </button>
-            <button
-              onClick={() => onKillSwitch('all')}
-              disabled={disabled}
-              className="rounded bg-red-700 px-3 py-1.5 text-sm text-white hover:bg-red-600 disabled:opacity-50"
-            >
-              Kill switch: all profiles
-            </button>
-          </>
-        ) : (
-          <p className="text-sm text-amber-700">Set a basic profile to enable the kill switch.</p>
-        )}
+        <button
+          onClick={() => onKillSwitch('selected')}
+          disabled={disabled || selectedCount === 0}
+          className="rounded bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-500 disabled:opacity-50"
+        >
+          Kill switch: selected
+        </button>
+        <button
+          onClick={() => onKillSwitch('all')}
+          disabled={disabled}
+          className="rounded bg-red-700 px-3 py-1.5 text-sm text-white hover:bg-red-600 disabled:opacity-50"
+        >
+          Kill switch: all profiles
+        </button>
       </div>
     </div>
   );

@@ -5,7 +5,7 @@ import { executeSyncPlan } from '@/lib/sync/executor';
 export async function POST(req: NextRequest) {
   const { targetProfileIds, source } = (await req.json().catch(() => ({}))) as {
     targetProfileIds?: string[];
-    source?: 'master' | 'basic';
+    source?: 'master' | 'kill-switch';
   };
 
   try {

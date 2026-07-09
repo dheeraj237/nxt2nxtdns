@@ -13,9 +13,6 @@ export const env = {
   get jwtSecret() {
     return required('JWT_SECRET');
   },
-  get serverSecret() {
-    return required('SERVER_SECRET'); // 32-byte hex, used for AES-256-GCM at rest
-  },
   get dbPath() {
     return process.env.DB_PATH ?? 'data/app.db';
   },
