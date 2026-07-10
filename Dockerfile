@@ -8,13 +8,14 @@ COPY . .
 RUN pnpm run build
 RUN pnpm prune --prod
 
-FROM gcr.io/distroless/nodejs20-debian12:nonroot
+FROM node:20-alpine
 WORKDIR /app
 ENV NODE_ENV=production
-COPY --from=build --chown=nonroot:nonroot /app/.next/standalone ./
-COPY --from=build --chown=nonroot:nonroot /app/.next/static ./.next/static
-COPY --from=build --chown=nonroot:nonroot /app/node_modules ./node_modules
-COPY --from=build --chown=nonroot:nonroot /app/src/lib/db/schema.sql ./src/lib/db/schema.sql
+COPY --from=build /app/.next/standalone ./
+COPY --from=build /app/.next/static ./.next/static
+COPY --from=build /app/src/lib/db/schema.sql ./src/lib/db/schema.sql
 VOLUME ["/app/data"]
 EXPOSE 3000
-ENTRYPOINT ["node", "server.js"]
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+CMD ["node", "server.js"]
