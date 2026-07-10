@@ -56,17 +56,50 @@ pnpm test   # vitest run
 
 ### Deploying (self-hosted, Docker)
 
+#### Quick start with docker-compose
+
 ```bash
-export MASTER_PASSWORD=...
+export MASTER_PASSWORD=your_secure_password
 export JWT_SECRET=$(openssl rand -hex 32)
 docker compose up --build -d
 ```
 
-- Exposes port `3000` on the host; put it behind your own reverse
+Then access the app at `http://localhost:3000`
+
+#### Custom port mapping
+
+To expose the app on a different port (e.g., 8080):
+
+```bash
+export MASTER_PASSWORD=your_secure_password
+export JWT_SECRET=$(openssl rand -hex 32)
+export PORT=8080
+docker compose up --build -d
+```
+
+Then access the app at `http://localhost:8080`
+
+#### CasaOS installation
+
+If you're running CasaOS on your home server:
+
+1. Open CasaOS App Store
+2. Search for "NextDNS Multi-Account Manager"
+3. Click Install
+4. Set environment variables:
+   - `MASTER_PASSWORD`: Your admin password
+   - `JWT_SECRET`: Generate with `openssl rand -hex 32`
+   - `PORT`: (optional) Custom port, default 3000
+5. Click Install and wait for the container to start
+
+#### Notes
+
+- Exposes port `3000` (or custom PORT) on the host; put it behind your own reverse
   proxy or tunnel for HTTPS (e.g. Caddy, Nginx, Tailscale) - the
   container itself serves plain HTTP.
 - The SQLite database lives in the `nxtdns-data` Docker volume, so
   data survives container rebuilds.
+- To use a pre-built image, set the Docker image to `dheeraj237/nxttonxtdns:latest` in your docker-compose configuration.
 
 ## Notes / accepted tradeoffs
 
