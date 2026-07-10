@@ -6,15 +6,15 @@ COPY package.json pnpm-lock.yaml .npmrc ./
 RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm run build
+RUN pnpm prune --prod
 
-FROM node:20-alpine
+FROM gcr.io/distroless/nodejs20-debian12:nonroot
 WORKDIR /app
 ENV NODE_ENV=production
-COPY --from=build /app/.next/standalone ./
-COPY --from=build /app/.next/static ./.next/static
-COPY --from=build /app/src/lib/db/schema.sql ./src/lib/db/schema.sql
+COPY --from=build --chown=nonroot:nonroot /app/.next/standalone ./
+COPY --from=build --chown=nonroot:nonroot /app/.next/static ./.next/static
+COPY --from=build --chown=nonroot:nonroot /app/node_modules ./node_modules
+COPY --from=build --chown=nonroot:nonroot /app/src/lib/db/schema.sql ./src/lib/db/schema.sql
 VOLUME ["/app/data"]
 EXPOSE 3000
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
-CMD ["node", "server.js"]
+ENTRYPOINT ["node", "server.js"]

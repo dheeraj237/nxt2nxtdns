@@ -1,16 +1,13 @@
 services:
-  app:
-    build: .
+  nxt2nxtdns:
+    image: dheerusuthar/nxt2nxtdns:latest
+    container_name: nxt2nxtdns
+    restart: always
     ports:
-      - "${PORT:-3000}:3000"
+      - "3000:3000"
     environment:
-      PORT: 3000
-      MASTER_PASSWORD: ${MASTER_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
+      MASTER_PASSWORD: ${MASTER_PASSWORD:-masterp@ss}
+      JWT_SECRET: ${JWT_SECRET:-jwtSectret}
       DB_PATH: /app/data/app.db
     volumes:
-      - nxtdns-data:/app/data
-    restart: unless-stopped
-
-volumes:
-  nxtdns-data:
+      - nxt2nxtdns-data:/app/data
