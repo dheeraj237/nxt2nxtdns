@@ -3,14 +3,14 @@
 import { useState } from 'react';
 import { BLOCKLIST_CATALOG } from '@/lib/nextdns/blocklistCatalog';
 import { useParentalControlCategoriesCatalog, useParentalControlServicesCatalog } from '@/hooks/useCatalog';
+import { SetupTab } from './SetupTab';
+import { AnalyticsTab } from './AnalyticsTab';
+import { LogsTab } from './LogsTab';
 import type { ProfileEditorAdapter } from '@/hooks/useProfileEditorAdapter';
+import type { ProfileSetup } from '@/lib/nextdns/types';
 
-const TABS = ['Security', 'Privacy', 'Parental Control', 'Denylist', 'Allowlist', 'Logs', 'Analytics', 'Settings'] as const;
+const TABS = ['Setup', 'Privacy', 'Parental Control', 'Denylist', 'Allowlist', 'Logs', 'Analytics'] as const;
 type Tab = (typeof TABS)[number];
-
-function Placeholder({ label }: { label: string }) {
-  return <p className="py-8 text-center text-sm text-slate-400">{label} isn&apos;t available yet.</p>;
-}
 
 function ListSection({
   kind,
@@ -171,8 +171,15 @@ function ParentalControlTab({ adapter }: { adapter: ProfileEditorAdapter }) {
   );
 }
 
-export function ProfileTabs({ adapter }: { adapter: ProfileEditorAdapter }) {
-  const [tab, setTab] = useState<Tab>('Privacy');
+interface ProfileTabsProps {
+  adapter: ProfileEditorAdapter;
+  setup?: ProfileSetup | null;
+  setupLoading?: boolean;
+  profileId?: string;
+}
+
+export function ProfileTabs({ adapter, setup = null, setupLoading = false, profileId = '' }: ProfileTabsProps) {
+  const [tab, setTab] = useState<Tab>('Setup');
   const { profile, isLoading, error } = adapter;
 
   if (isLoading) return <p className="text-sm text-slate-500">Loading profile...</p>;
@@ -193,7 +200,7 @@ export function ProfileTabs({ adapter }: { adapter: ProfileEditorAdapter }) {
         ))}
       </div>
       <div className="p-4">
-        {tab === 'Security' && <Placeholder label="Security" />}
+        {tab === 'Setup' && <SetupTab profileId={profileId} profileLabel={profile?.name || 'Profile'} setup={setup} setupLoading={setupLoading} />}
         {tab === 'Privacy' && <PrivacyTab adapter={adapter} />}
         {tab === 'Parental Control' && <ParentalControlTab adapter={adapter} />}
         {tab === 'Denylist' && (
@@ -202,9 +209,8 @@ export function ProfileTabs({ adapter }: { adapter: ProfileEditorAdapter }) {
         {tab === 'Allowlist' && (
           <ListSection kind="allowlist" entries={profile.allowlist} onAdd={adapter.addEntry} onRemove={adapter.removeEntry} onToggleActive={adapter.toggleEntryActive} />
         )}
-        {tab === 'Logs' && <Placeholder label="Logs" />}
-        {tab === 'Analytics' && <Placeholder label="Analytics" />}
-        {tab === 'Settings' && <Placeholder label="Settings" />}
+        {tab === 'Logs' && <LogsTab profileId={profileId} />}
+        {tab === 'Analytics' && <AnalyticsTab profileId={profileId} />}
       </div>
     </div>
   );

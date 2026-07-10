@@ -63,6 +63,40 @@ function migrateAddLinkedIpColumn() {
 
 migrateAddLinkedIpColumn();
 
+function migrateAddSchedulesTables() {
+  const scheduleTableExists = (
+    db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'schedules'").get() as
+      | { name: string }
+      | undefined
+  ) !== undefined;
+
+  if (!scheduleTableExists) {
+    db.exec(`
+      CREATE TABLE schedules (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        start_time TEXT NOT NULL,
+        end_time TEXT NOT NULL,
+        target_profile_id TEXT NOT NULL REFERENCES profiles(id),
+        enabled BOOLEAN DEFAULT TRUE,
+        last_executed_at TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+
+      CREATE TABLE schedule_snapshots (
+        id TEXT PRIMARY KEY,
+        schedule_id TEXT NOT NULL REFERENCES schedules(id) ON DELETE CASCADE,
+        account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+        profile_id TEXT NOT NULL,
+        snapshot_json TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+    `);
+  }
+}
+
+migrateAddSchedulesTables();
+
 export function newId(): string {
   return crypto.randomUUID();
 }

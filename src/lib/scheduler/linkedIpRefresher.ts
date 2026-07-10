@@ -26,9 +26,9 @@ export function initLinkedIpRefresherJob() {
           continue;
         }
 
-        await linkProfileToCurrentIp(setup.linkedIpUpdateToken, profile.profile_id);
+        const linkedIp = await linkProfileToCurrentIp(setup.linkedIpUpdateToken, profile.profile_id);
         console.log(
-          `[LinkedIP] Profile ${profile.id} (${profile.account_label}/${profile.profile_id}): re-linked successfully`,
+          `[LinkedIP] Profile ${profile.id} (${profile.account_label}/${profile.profile_id}): re-linked to ${linkedIp}`,
         );
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);

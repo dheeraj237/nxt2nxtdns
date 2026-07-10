@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAccounts } from '@/hooks/useAccounts';
 import { useProfiles } from '@/hooks/useProfiles';
@@ -44,6 +45,17 @@ export default function AccountsPage() {
       </div>
 
       <AccountList accounts={accounts} profiles={profiles} />
+
+      <div className="mt-8 pt-6 border-t border-slate-200">
+        <h2 className="text-sm font-medium text-slate-700 mb-4">Tools</h2>
+        <Link
+          href="/schedules"
+          className="block rounded border border-slate-200 p-4 text-sm hover:bg-slate-50 transition"
+        >
+          <div className="font-medium text-slate-900">Scheduled Profile Swaps</div>
+          <div className="text-slate-600 text-xs">Automatically swap DNS profiles at scheduled times</div>
+        </Link>
+      </div>
 
       {adding && <AddAccountModal onClose={() => setAdding(false)} />}
     </div>

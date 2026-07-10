@@ -1,50 +1,50 @@
 ## 1. Database Schema
 
-- [ ] 1.1 Create SQL migration to add `schedules` table with columns: id (PK), name, start_time (HH:MM), end_time (HH:MM), target_profile_id (FK), enabled (BOOLEAN DEFAULT TRUE), last_executed_at (nullable), created_at
-- [ ] 1.2 Create SQL migration to add `schedule_snapshots` table with columns: id (PK), schedule_id (FK), account_id (FK), profile_id, snapshot_json (TEXT), created_at
-- [ ] 1.3 Create migration function in `src/lib/db/client.ts` to handle existing databases (same pattern as auto_refresh_linked_ip migration)
+- [x] 1.1 Create SQL migration to add `schedules` table with columns: id (PK), name, start_time (HH:MM), end_time (HH:MM), target_profile_id (FK), enabled (BOOLEAN DEFAULT TRUE), last_executed_at (nullable), created_at
+- [x] 1.2 Create SQL migration to add `schedule_snapshots` table with columns: id (PK), schedule_id (FK), account_id (FK), profile_id, snapshot_json (TEXT), created_at
+- [x] 1.3 Create migration function in `src/lib/db/client.ts` to handle existing databases (same pattern as auto_refresh_linked_ip migration)
 - [ ] 1.4 Test migrations locally (apply and rollback) on both fresh and existing databases
 
 ## 2. Database Layer (Repository)
 
-- [ ] 2.1 Add `ScheduleRow` and `ScheduleSnapshotRow` interfaces to `src/lib/db/repo.ts`
-- [ ] 2.2 Add `schedulesRepo` object with: list(), get(id), create(name, startTime, endTime, targetProfileId), update(id, patch), delete(id), updateLastExecutedAt(id)
-- [ ] 2.3 Add `schedule_snapshots` repository with: create(scheduleId, accountId, profileId, snapshot), getLatestByScheduleAndAccount(scheduleId, accountId), deleteByScheduleId(scheduleId), getSnapshotsForRestore(scheduleId) [returns all snapshots from today's start_time execution]
+- [x] 2.1 Add `ScheduleRow` and `ScheduleSnapshotRow` interfaces to `src/lib/db/repo.ts`
+- [x] 2.2 Add `schedulesRepo` object with: list(), get(id), create(name, startTime, endTime, targetProfileId), update(id, patch), delete(id), updateLastExecutedAt(id)
+- [x] 2.3 Add `schedule_snapshots` repository with: create(scheduleId, accountId, profileId, snapshot), getLatestByScheduleAndAccount(scheduleId, accountId), deleteByScheduleId(scheduleId), getSnapshotsForRestore(scheduleId) [returns all snapshots from today's start_time execution]
 - [ ] 2.4 Write tests for repository functions (create, update, list, snapshot operations)
 
 ## 3. Backend: Scheduler Extension
 
-- [ ] 3.1 Extend `src/lib/scheduler/index.ts` to add function `getScheduleJobsFromDatabase()` that queries all enabled schedules and converts each to two cron expressions (start_time, end_time)
-- [ ] 3.2 Create new file `src/lib/scheduler/scheduledProfileSwapRunner.ts` with:
+- [x] 3.1 Extend `src/lib/scheduler/index.ts` to add function `getScheduleJobsFromDatabase()` that queries all enabled schedules and converts each to two cron expressions (start_time, end_time)
+- [x] 3.2 Create new file `src/lib/scheduler/scheduledProfileSwapRunner.ts` with:
   - `runScheduleStart(scheduleId)` function: snapshot + apply target profile
   - `runScheduleEnd(scheduleId)` function: restore from snapshot
   - Both include comprehensive error logging per-account
-- [ ] 3.3 Extend the scheduler initialization in `src/lib/scheduler/index.ts` to:
+- [x] 3.3 Extend the scheduler initialization in `src/lib/scheduler/index.ts` to:
   - Create a minute-tick job (`*/1 * * * *`) that queries schedules and checks if any match current time
   - Call `runScheduleStart()` or `runScheduleEnd()` as needed
   - Respect the `last_executed_at` flag to prevent double-execution
-- [ ] 3.4 Implement snapshot logic: fetch profile live config from NextDNS, store JSON in schedule_snapshots table
-- [ ] 3.5 Implement apply logic: use existing sync/diff engine to apply target profile config to all accounts' default profiles
-- [ ] 3.6 Implement restore logic: read snapshot, apply it back to each account's default profile
-- [ ] 3.7 Add comprehensive logging: `[Schedule] ...` prefixed logs for all operations (snapshot start, apply success/fail per account, restore success/fail per account)
+- [x] 3.4 Implement snapshot logic: fetch profile live config from NextDNS, store JSON in schedule_snapshots table
+- [x] 3.5 Implement apply logic: use existing sync/diff engine to apply target profile config to all accounts' default profiles
+- [x] 3.6 Implement restore logic: read snapshot, apply it back to each account's default profile
+- [x] 3.7 Add comprehensive logging: `[Schedule] ...` prefixed logs for all operations (snapshot start, apply success/fail per account, restore success/fail per account)
 
 ## 4. Backend: API Routes
 
-- [ ] 4.1 Create `src/app/api/schedules/route.ts` with:
+- [x] 4.1 Create `src/app/api/schedules/route.ts` with:
   - GET handler: return all schedules as JSON
   - POST handler: accept (name, startTime, endTime, targetProfileId), validate, create schedule, return 201 with new schedule
-- [ ] 4.2 Create `src/app/api/schedules/[id]/route.ts` with:
+- [x] 4.2 Create `src/app/api/schedules/[id]/route.ts` with:
   - GET handler: return single schedule by ID
   - PATCH handler: accept (name?, startTime?, endTime?, targetProfileId?, enabled?), validate, update, return 200
   - DELETE handler: delete schedule and associated snapshots, return 204
-- [ ] 4.3 Validation: start_time < end_time, both are valid HH:MM format, targetProfileId exists
-- [ ] 4.4 Error handling: 404 if schedule not found, 400 if validation fails, 500 if DB error
+- [x] 4.3 Validation: start_time < end_time, both are valid HH:MM format, targetProfileId exists
+- [x] 4.4 Error handling: 404 if schedule not found, 400 if validation fails, 500 if DB error
 - [ ] 4.5 Write integration tests for all endpoints
 
 ## 5. Frontend: Data Models and API Client
 
-- [ ] 5.1 Add `Schedule` and `ScheduleSnapshot` types to `src/lib/apiClient.ts`
-- [ ] 5.2 Add API client functions to the `api` object:
+- [x] 5.1 Add `Schedule` and `ScheduleSnapshot` types to `src/lib/apiClient.ts`
+- [x] 5.2 Add API client functions to the `api` object:
   - `listSchedules()`: GET `/api/schedules`
   - `createSchedule(name, startTime, endTime, targetProfileId)`: POST `/api/schedules`
   - `updateSchedule(id, patch)`: PATCH `/api/schedules/:id`
@@ -52,7 +52,7 @@
 
 ## 6. Frontend: Hooks
 
-- [ ] 6.1 Create new hook `src/hooks/useSchedules.ts` with React Query:
+- [x] 6.1 Create new hook `src/hooks/useSchedules.ts` with React Query:
   - `useSchedules()`: list all schedules
   - `useCreateSchedule()`: mutation to create
   - `useUpdateSchedule()`: mutation to update
@@ -61,25 +61,25 @@
 
 ## 7. Frontend: UI Components
 
-- [ ] 7.1 Create `src/components/ScheduleList.tsx`: displays all schedules in a table with: name, start_time, end_time, target profile, enabled toggle, edit/delete buttons
-- [ ] 7.2 Create `src/components/ScheduleForm.tsx`: form for create/edit with: name text input, start_time time picker, end_time time picker, target_profile dropdown
+- [x] 7.1 Create `src/components/ScheduleList.tsx`: displays all schedules in a table with: name, start_time, end_time, target profile, enabled toggle, edit/delete buttons
+- [x] 7.2 Create `src/components/ScheduleForm.tsx`: form for create/edit with: name text input, start_time time picker, end_time time picker, target_profile dropdown
   - Pre-fill on edit mode
   - Validate start_time < end_time
   - Show loading state on submit
   - Display error messages
-- [ ] 7.3 Create `src/components/ScheduleModal.tsx`: modal wrapper around ScheduleForm (for create/edit flows)
-- [ ] 7.4 Create `src/components/ScheduleDeleteModal.tsx`: confirmation modal for delete action
-- [ ] 7.5 Implement enable/disable toggle: update enabled flag via PATCH mutation, show loading state, log errors
+- [x] 7.3 Create `src/components/ScheduleModal.tsx`: modal wrapper around ScheduleForm (for create/edit flows)
+- [x] 7.4 Create `src/components/ScheduleDeleteModal.tsx`: confirmation modal for delete action
+- [x] 7.5 Implement enable/disable toggle: update enabled flag via PATCH mutation, show loading state, log errors
 
 ## 8. Frontend: Schedule Management Page
 
-- [ ] 8.1 Create new page `src/app/schedules/page.tsx`:
+- [x] 8.1 Create new page `src/app/schedules/page.tsx`:
   - Display ScheduleList component
   - "New Schedule" button opens ScheduleModal in create mode
   - Clicking edit opens ScheduleModal in edit mode
   - Clicking delete opens ScheduleDeleteModal for confirmation
-- [ ] 8.2 Link from home page or nav to /schedules route
-- [ ] 8.3 Add breadcrumb/back button to return to home
+- [x] 8.2 Link from home page or nav to /schedules route
+- [x] 8.3 Add breadcrumb/back button to return to home
 
 ## 9. Frontend: Profile Display (Show Next Scheduled Swap)
 

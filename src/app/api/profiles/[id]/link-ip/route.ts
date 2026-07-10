@@ -12,15 +12,28 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     const apiKey = accountsRepo.getDecryptedKey(profile.account_id);
     const setup = await getProfileSetup(apiKey, profile.profile_id);
 
+    console.log(`[LinkIP] Profile ${profile.profile_id}:`);
+    console.log(`  - linkedIpUpdateToken: ${setup.linkedIpUpdateToken}`);
+    console.log(`  - linkedIp: ${setup.linkedIp}`);
+    console.log(`  - linkedIpDNSServers: ${setup.linkedIpDNSServers?.join(',')}`);
+    console.log(`  - All keys: ${Object.keys(setup).join(',')}`);
+
     if (!setup.linkedIpUpdateToken) {
-      return NextResponse.json({ error: 'linkedIpUpdateToken not available from NextDNS' }, { status: 500 });
+      console.error(`[LinkIP] ERROR: No token found for profile ${profile.profile_id}`);
+      return NextResponse.json(
+        {
+          error: 'Profile does not have IP linking enabled. Enable it in NextDNS profile setup.',
+          debug: { hasToken: !!setup.linkedIpUpdateToken, setupKeys: Object.keys(setup) },
+        },
+        { status: 422 },
+      );
     }
 
-    await linkProfileToCurrentIp(setup.linkedIpUpdateToken, profile.profile_id);
+    const linkedIp = await linkProfileToCurrentIp(setup.linkedIpUpdateToken, profile.profile_id);
 
     return NextResponse.json(
       {
-        linkedIp: setup.linkedIp || null,
+        linkedIp,
         linkedIpDNSServers: setup.linkedIpDNSServers || [],
         updatedAt: new Date().toISOString(),
       },

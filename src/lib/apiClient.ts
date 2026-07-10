@@ -89,6 +89,26 @@ export interface LinkedIpResponse {
   updatedAt: string;
 }
 
+export interface Schedule {
+  id: string;
+  name: string;
+  start_time: string;
+  end_time: string;
+  target_profile_id: string;
+  enabled: boolean;
+  last_executed_at: string | null;
+  created_at: string;
+}
+
+export interface ScheduleSnapshot {
+  id: string;
+  schedule_id: string;
+  account_id: string;
+  profile_id: string;
+  snapshot_json: string;
+  created_at: string;
+}
+
 export const api = {
   login: (password: string) => apiFetch<{ ok: true }>('/api/auth/login', { method: 'POST', body: JSON.stringify({ password }) }),
   logout: () => apiFetch<{ ok: true }>('/api/auth/logout', { method: 'POST' }),
@@ -131,4 +151,15 @@ export const api = {
     apiFetch<SyncDiff[]>('/api/sync/diff', { method: 'POST', body: JSON.stringify({ sourceProfile, targetAccountIds }) }),
   applySync: (sourceProfile: LiveProfile, targetAccountIds: string[]) =>
     apiFetch<SyncResult[]>('/api/sync/apply', { method: 'POST', body: JSON.stringify({ sourceProfile, targetAccountIds }) }),
+
+  listSchedules: () => apiFetch<Schedule[]>('/api/schedules'),
+  createSchedule: (name: string, startTime: string, endTime: string, targetProfileId: string) =>
+    apiFetch<Schedule>('/api/schedules', {
+      method: 'POST',
+      body: JSON.stringify({ name, startTime, endTime, targetProfileId }),
+    }),
+  getSchedule: (id: string) => apiFetch<Schedule>(`/api/schedules/${id}`),
+  updateSchedule: (id: string, patch: Partial<Omit<Schedule, 'id' | 'created_at'>>) =>
+    apiFetch<Schedule>(`/api/schedules/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+  deleteSchedule: (id: string) => apiFetch<void>(`/api/schedules/${id}`, { method: 'DELETE' }),
 };

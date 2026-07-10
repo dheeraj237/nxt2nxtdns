@@ -6,8 +6,8 @@ import { useAccounts } from '@/hooks/useAccounts';
 import { useProfiles, useDeleteProfile } from '@/hooks/useProfiles';
 import { useProfileEditorAdapter } from '@/hooks/useProfileEditorAdapter';
 import { useComputeDiff, useApplySync } from '@/hooks/useSync';
+import { useProfileSetup } from '@/hooks/useProfileSetup';
 import { ProfileTabs } from '@/components/ProfileTabs';
-import { ProfileLinkedIpCard } from '@/components/ProfileLinkedIpCard';
 import { SaveToModal } from '@/components/SaveToModal';
 import { DiffPreviewModal } from '@/components/DiffPreviewModal';
 import type { SyncDiff, SyncResult } from '@/lib/apiClient';
@@ -31,6 +31,7 @@ export default function AccountDetailPage() {
   const activeProfileId = selectedProfileId ?? account?.default_profile_id ?? accountProfiles[0]?.id ?? '';
 
   const adapter = useProfileEditorAdapter(activeProfileId);
+  const { data: setup, isLoading: setupLoading } = useProfileSetup(activeProfileId);
 
   const [savingTo, setSavingTo] = useState(false);
   const [diffs, setDiffs] = useState<SyncDiff[] | null>(null);
@@ -120,11 +121,7 @@ export default function AccountDetailPage() {
         </button>
       </div>
 
-      <ProfileTabs adapter={adapter} />
-
-      <div className="mt-6">
-        <ProfileLinkedIpCard profileId={activeProfileId} profileLabel={adapter.profile?.name || 'Profile'} />
-      </div>
+      <ProfileTabs adapter={adapter} setup={setup} setupLoading={setupLoading} profileId={activeProfileId} />
 
       <div className="mt-4 flex justify-between">
         <button

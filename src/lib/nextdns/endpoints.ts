@@ -106,8 +106,33 @@ export function patchParentalControl(
   });
 }
 
-export function getProfileSetup(apiKey: string, profileId: string): Promise<ProfileSetup> {
-  return nextDnsFetch(apiKey, `/profiles/${profileId}/setup`);
+export async function getProfileSetup(apiKey: string, profileId: string): Promise<ProfileSetup> {
+  const response = (await nextDnsFetch(apiKey, `/profiles/${profileId}/setup`)) as {
+    ipv4?: string[];
+    ipv6?: string[];
+    linkedIp?: {
+      servers?: string[];
+      ip?: string;
+      updateToken?: string;
+      ddns?: string | null;
+    };
+    dnscrypt?: string;
+  };
+
+  const data = response;
+  const linkedIpData = data.linkedIp || {};
+
+  return {
+    id: profileId,
+    dnsServers: data.ipv4 && data.ipv4.length > 0 ? data.ipv4 : undefined,
+    dnsOverTls: `${profileId}.dns.nextdns.io`,
+    dnsOverHttps: `https://dns.nextdns.io/${profileId}`,
+    ipv6Addresses: data.ipv6,
+    linkedIp: linkedIpData.ip,
+    linkedIpDNSServers: linkedIpData.servers,
+    linkedIpUpdateToken: linkedIpData.updateToken,
+    ddnsHostname: linkedIpData.ddns || undefined,
+  };
 }
 
 export async function linkProfileToCurrentIp(linkedIpUpdateToken: string, profileId: string): Promise<string> {
@@ -123,14 +148,28 @@ export async function linkProfileToCurrentIp(linkedIpUpdateToken: string, profil
       throw new Error(`NextDNS link-ip returned ${response.status}: ${response.statusText}`);
     }
 
-    const text = await response.text();
-    if (text !== 'OK') {
-      throw new Error(`Unexpected response from link-ip endpoint: ${text}`);
-    }
-
-    return 'OK';
+    const linkedIp = await response.text();
+    return linkedIp;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to link IP to profile ${profileId}: ${message}`);
   }
+}
+
+export interface AnalyticsStatusItem {
+  status: 'blocked' | 'allowed' | 'default';
+  queries: number;
+}
+
+export async function getAnalyticsStatus(
+  apiKey: string,
+  profileId: string,
+  from: string,
+  to: string,
+): Promise<AnalyticsStatusItem[]> {
+  return nextDnsFetch(apiKey, `/profiles/${profileId}/analytics/status?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
+}
+
+export async function getLogs(apiKey: string, profileId: string, limit: number = 50): Promise<any[]> {
+  return nextDnsFetch(apiKey, `/profiles/${profileId}/logs?limit=${limit}&sort=desc`);
 }

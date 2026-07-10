@@ -63,7 +63,7 @@ export const accountsRepo = {
       for (const row of profileRows) {
         db.prepare(
           'INSERT INTO profiles (id, account_id, profile_id, display_name, auto_refresh_linked_ip, created_at) VALUES (?, ?, ?, ?, ?, ?)',
-        ).run(row.id, row.account_id, row.profile_id, row.display_name, row.auto_refresh_linked_ip, row.created_at);
+        ).run(row.id, row.account_id, row.profile_id, row.display_name, row.auto_refresh_linked_ip ? 1 : 0, row.created_at);
       }
 
       const defaultProfile = profileRows[defaultProfileIndex];
@@ -147,6 +147,102 @@ export const profilesRepo = {
       .all() as never;
   },
   updateAutoRefresh(id: string, enabled: boolean): void {
-    db.prepare('UPDATE profiles SET auto_refresh_linked_ip = ? WHERE id = ?').run(enabled, id);
+    db.prepare('UPDATE profiles SET auto_refresh_linked_ip = ? WHERE id = ?').run(enabled ? 1 : 0, id);
+  },
+};
+
+export interface ScheduleRow {
+  id: string;
+  name: string;
+  start_time: string;
+  end_time: string;
+  target_profile_id: string;
+  enabled: boolean;
+  last_executed_at: string | null;
+  created_at: string;
+}
+
+export interface ScheduleSnapshotRow {
+  id: string;
+  schedule_id: string;
+  account_id: string;
+  profile_id: string;
+  snapshot_json: string;
+  created_at: string;
+}
+
+export const schedulesRepo = {
+  list(): ScheduleRow[] {
+    return db.prepare('SELECT * FROM schedules ORDER BY created_at').all() as ScheduleRow[];
+  },
+  get(id: string): ScheduleRow | undefined {
+    return db.prepare('SELECT * FROM schedules WHERE id = ?').get(id) as ScheduleRow | undefined;
+  },
+  create(name: string, startTime: string, endTime: string, targetProfileId: string): ScheduleRow {
+    const id = newId();
+    const createdAt = new Date().toISOString();
+    db.prepare(
+      'INSERT INTO schedules (id, name, start_time, end_time, target_profile_id, enabled, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    ).run(id, name, startTime, endTime, targetProfileId, 1, createdAt);
+    return { id, name, start_time: startTime, end_time: endTime, target_profile_id: targetProfileId, enabled: true, last_executed_at: null, created_at: createdAt };
+  },
+  update(id: string, patch: Partial<Omit<ScheduleRow, 'id' | 'created_at'>>): void {
+    const updates: string[] = [];
+    const values: (string | number | null)[] = [];
+    if ('name' in patch && patch.name !== undefined) {
+      updates.push('name = ?');
+      values.push(patch.name);
+    }
+    if ('start_time' in patch && patch.start_time !== undefined) {
+      updates.push('start_time = ?');
+      values.push(patch.start_time);
+    }
+    if ('end_time' in patch && patch.end_time !== undefined) {
+      updates.push('end_time = ?');
+      values.push(patch.end_time);
+    }
+    if ('target_profile_id' in patch && patch.target_profile_id !== undefined) {
+      updates.push('target_profile_id = ?');
+      values.push(patch.target_profile_id);
+    }
+    if ('enabled' in patch && patch.enabled !== undefined) {
+      updates.push('enabled = ?');
+      values.push(patch.enabled ? 1 : 0);
+    }
+    if ('last_executed_at' in patch) {
+      updates.push('last_executed_at = ?');
+      values.push(patch.last_executed_at ?? null);
+    }
+    if (updates.length === 0) return;
+    values.push(id);
+    db.prepare(`UPDATE schedules SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+  },
+  delete(id: string): void {
+    db.prepare('DELETE FROM schedules WHERE id = ?').run(id);
+  },
+  updateLastExecutedAt(id: string): void {
+    db.prepare('UPDATE schedules SET last_executed_at = ? WHERE id = ?').run(new Date().toISOString(), id);
+  },
+};
+
+export const scheduleSnapshotsRepo = {
+  create(scheduleId: string, accountId: string, profileId: string, snapshotJson: string): ScheduleSnapshotRow {
+    const id = newId();
+    const createdAt = new Date().toISOString();
+    db.prepare(
+      'INSERT INTO schedule_snapshots (id, schedule_id, account_id, profile_id, snapshot_json, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+    ).run(id, scheduleId, accountId, profileId, snapshotJson, createdAt);
+    return { id, schedule_id: scheduleId, account_id: accountId, profile_id: profileId, snapshot_json: snapshotJson, created_at: createdAt };
+  },
+  getLatestByScheduleAndAccount(scheduleId: string, accountId: string): ScheduleSnapshotRow | undefined {
+    return db
+      .prepare('SELECT * FROM schedule_snapshots WHERE schedule_id = ? AND account_id = ? ORDER BY created_at DESC LIMIT 1')
+      .get(scheduleId, accountId) as ScheduleSnapshotRow | undefined;
+  },
+  deleteByScheduleId(scheduleId: string): void {
+    db.prepare('DELETE FROM schedule_snapshots WHERE schedule_id = ?').run(scheduleId);
+  },
+  getSnapshotsForRestore(scheduleId: string): ScheduleSnapshotRow[] {
+    return db.prepare('SELECT * FROM schedule_snapshots WHERE schedule_id = ? ORDER BY created_at DESC').all(scheduleId) as ScheduleSnapshotRow[];
   },
 };
