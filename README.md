@@ -99,7 +99,7 @@ If you're running CasaOS on your home server:
   container itself serves plain HTTP.
 - The SQLite database lives in the `nxtdns-data` Docker volume, so
   data survives container rebuilds.
-- To use a pre-built image, set the Docker image to `dheeraj237/nxttonxtdns:latest` in your docker-compose configuration.
+- To use a pre-built image, set the Docker image to `dheerusuthar/nxt2nxtdns:latest` in your docker-compose configuration.
 
 ## Notes / accepted tradeoffs
 

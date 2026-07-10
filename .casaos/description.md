@@ -45,9 +45,9 @@ Default credentials: Use the `MASTER_PASSWORD` you set during installation.
 ## Documentation
 
 For more information, visit the project repository:
-https://github.com/dheeraj237/nxttonxtdns
+https://github.com/dheeraj237/nxt2nxtdns
 
 ## Support
 
 For issues and feature requests, please open an issue on GitHub:
-https://github.com/dheeraj237/nxttonxtdns/issues
+https://github.com/dheeraj237/nxt2nxtdns/issues

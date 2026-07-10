@@ -14,8 +14,8 @@ This guide covers deploying NextDNS Multi-Account Manager using Docker and Docke
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/dheeraj237/nxttonxtdns.git
-cd nxttonxtdns
+git clone https://github.com/dheeraj237/nxt2nxtdns.git
+cd nxt2nxtdns
 ```
 
 ### 2. Set environment variables
@@ -103,18 +103,18 @@ docker run --rm -v nxtdns-data:/data -v $(pwd):/backup \
 
 ### Latest builds
 
-- `dheeraj237/nxttonxtdns:latest` - Latest stable release
-- `dheeraj237/nxttonxtdns:vX.Y.Z` - Specific version (e.g., v1.0.0)
+- `dheerusuthar/nxt2nxtdns:latest` - Latest stable release
+- `dheerusuthar/nxt2nxtdns:vX.Y.Z` - Specific version (e.g., v1.0.0)
 
 ### Building locally
 
 ```bash
 # Build for your architecture
-docker build -t nxttonxtdns:local .
+docker build -t nxt2nxtdns:local .
 
 # Or build for multiple architectures
 docker buildx build --platform linux/amd64,linux/arm64 \
-  -t nxttonxtdns:local .
+  -t nxt2nxtdns:local .
 ```
 
 ## Monitoring and Logs
@@ -294,7 +294,7 @@ Common issues:
 ### Build image locally
 
 ```bash
-docker build -t nxttonxtdns:dev .
+docker build -t nxt2nxtdns:dev .
 ```
 
 ### Run with mounted source (for development)
@@ -305,7 +305,7 @@ docker run -it --rm \
   -p 3000:3000 \
   -e MASTER_PASSWORD=dev \
   -e JWT_SECRET=dev \
-  nxttonxtdns:dev
+  nxt2nxtdns:dev
 ```
 
 ## Security Considerations
@@ -321,5 +321,5 @@ docker run -it --rm \
 
 - [Docker documentation](https://docs.docker.com/)
 - [Docker Compose documentation](https://docs.docker.com/compose/)
-- [Project repository](https://github.com/dheeraj237/nxttonxtdns)
+- [Project repository](https://github.com/dheeraj237/nxt2nxtdns)
 - [NextDNS API documentation](https://my.nextdns.io/docs)

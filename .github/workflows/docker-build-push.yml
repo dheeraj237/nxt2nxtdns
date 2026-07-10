@@ -30,7 +30,7 @@ jobs:
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "tags=dheeraj237/nxttonxtdns:${VERSION},dheeraj237/nxttonxtdns:latest" >> $GITHUB_OUTPUT
+          echo "tags=dheerusuthar/nxt2nxtdns:${VERSION},dheerusuthar/nxt2nxtdns:latest" >> $GITHUB_OUTPUT
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -39,8 +39,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=registry,ref=dheeraj237/nxttonxtdns:buildcache
-          cache-to: type=registry,ref=dheeraj237/nxttonxtdns:buildcache,mode=max
+          cache-from: type=registry,ref=dheerusuthar/nxt2nxtdns:buildcache
+          cache-to: type=registry,ref=dheerusuthar/nxt2nxtdns:buildcache,mode=max
 
       - name: Create release notes
         env:

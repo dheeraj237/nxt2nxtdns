@@ -80,7 +80,7 @@ The NextDNS Multi-Account Manager is currently deployable only from source code,
 - In-container only: Data lost on container restart
 
 ### Decision 6: Registry: Docker Hub
-**Choice:** Push images to Docker Hub as `dheeraj237/nxttonxtdns:latest` and `dheeraj237/nxttonxtdns:vX.Y.Z`
+**Choice:** Push images to Docker Hub as `dheerusuthar/nxt2nxtdns:latest` and `dheerusuthar/nxt2nxtdns:vX.Y.Z`
 
 **Rationale:**
 - Docker Hub is the standard registry; CasaOS users expect it

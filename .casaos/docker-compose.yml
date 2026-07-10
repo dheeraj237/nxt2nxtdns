@@ -1,6 +1,6 @@
 services:
   app:
-    image: dheeraj237/nxttonxtdns:latest
+    image: dheerusuthar/nxt2nxtdns:latest
     restart: unless-stopped
     ports:
       - "${PORT:-3000}:3000"
@@ -22,8 +22,8 @@ x-casaos-description: |
   Manage multiple NextDNS accounts and profiles from a single web interface.
   Configure port mapping, set up scheduled profile swaps, and monitor account activity.
 x-casaos-category: Network Management
-x-casaos-icon: https://raw.githubusercontent.com/dheeraj237/nxttonxtdns/main/.casaos/icon.png
+x-casaos-icon: https://raw.githubusercontent.com/dheerusuthar/nxt2nxtdns/main/.casaos/icon.png
 x-casaos-author: Dheeraj
-x-casaos-developer_url: https://github.com/dheeraj237/nxttonxtdns
-x-casaos-app_id: nxttonxtdns
+x-casaos-developer_url: https://github.com/dheeraj237/nxt2nxtdns
+x-casaos-app_id: nxt2nxtdns
 x-casaos-port_map: "3000"

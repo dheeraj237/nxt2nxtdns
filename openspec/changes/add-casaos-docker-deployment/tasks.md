@@ -10,7 +10,7 @@
 - [x] 1.8 Expose port 3000 (internal)
 - [x] 1.9 Add health check endpoint configuration
 - [x] 1.10 Set default command to start Next.js server with `node server.js` or `npm start`
-- [ ] 1.11 Test Dockerfile locally: `docker build -t nxttonxtdns:latest .`
+- [ ] 1.11 Test Dockerfile locally: `docker build -t nxt2nxtdns:latest .`
 - [ ] 1.12 Verify image size (should be < 500MB)
 
 ## 2. Docker Compose Configuration
@@ -57,7 +57,7 @@
 - [ ] 5.5 Build image for both architectures
 - [ ] 5.6 Push with tags: `latest`, and version tag (e.g., `v1.0.0`)
 - [ ] 5.7 Test workflow by creating a test tag and verifying push to Docker Hub
-- [ ] 5.8 Verify image pulls successfully: `docker pull dheeraj237/nxttonxtdns:latest`
+- [ ] 5.8 Verify image pulls successfully: `docker pull dheeraj237/nxt2nxtdns:latest`
 
 ## 6. Documentation
 

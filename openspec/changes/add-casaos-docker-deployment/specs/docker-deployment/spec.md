@@ -4,11 +4,11 @@
 The system SHALL be packaged and published as a Docker image to a public registry (Docker Hub).
 
 #### Scenario: User pulls docker image
-- **WHEN** user runs `docker pull nxttonxtdns:latest`
+- **WHEN** user runs `docker pull nxt2nxtdns:latest`
 - **THEN** the image downloads successfully and contains the compiled Next.js app with all runtime dependencies
 
 #### Scenario: Container starts successfully
-- **WHEN** user runs `docker run -p 3000:3000 nxttonxtdns:latest`
+- **WHEN** user runs `docker run -p 3000:3000 nxt2nxtdns:latest`
 - **THEN** the container starts, the app listens on port 3000 inside the container, and the health check passes
 
 ### Requirement: Docker Compose support
